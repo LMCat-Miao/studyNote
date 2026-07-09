@@ -1861,6 +1861,8 @@ run
 1. this的本质
 
    > 是一个动态的代词
+   >
+   > this 其实是函数的一个隐藏参数。
 
    **核心概念**：`this` 是函数执行时的上下文对象，它的值**不是在函数定义时确定的，而是在函数执行时动态确定的**。同一个函数，用不同的方式调用，`this` 的指向可能完全不同。
 
@@ -1902,8 +1904,6 @@ run
 
       通过 `call`、`apply` 或 `bind` 可以**手动指定**函数执行时的 `this` 指向。
 
-      javascript
-
       ```
       function greet() {
           console.log(`Hello, ${this.name}`);
@@ -1914,13 +1914,13 @@ run
       const bound = greet.bind(person);
       bound();             // Hello, Alice
       ```
-
+      
       **三者区别**：
 
       - `call`：参数逐个传递
       - `apply`：参数以数组形式传递
       - `bind`：返回一个新函数，不立即执行
-
+      
    4. 规则四：构造函数绑定（new关键字）
 
       当函数通过 `new` 关键字作为**构造函数**调用时，`this` 指向**新创建的实例对象**。
@@ -1933,14 +1933,178 @@ run
       }
       const p = new Person('张三');
       console.log(p.name); // '张三'
+      
+      
       ```
 
+      call 可以传参数
+
+      > call只能修改普通函数，不能修改箭头函数
+
+      ```
+      function show(age, city) {
+          console.log(this.name);
+          console.log(age);
+          console.log(city);
+      }
+      
+      const person = {
+          name: "Tom"
+      };
+      
+      show.call(person, 20, "哈尔滨");
+      ```
+   
+      输出：
+   
+      ```
+      Tom
+      20
+      哈尔滨
+      ```
+   
+      这里：
+   
+      ```
+      call(person, 20, "哈尔滨")
+      ```
+   
+      第一个参数永远是：
+   
+      ```
+      this
+      ```
+   
+      后面的参数：
+   
+      就是函数自己的参数。
+   
+      #apply 和 call 几乎一样。
+   
+      唯一的区别：
+   
+      call：
+   
+      ```
+      show.call(person, 20, "哈尔滨");
+      ```
+   
+      参数一个一个写。
+   
+      ------
+   
+      apply：
+   
+      ```
+      show.apply(person, [20, "哈尔滨"]);
+      ```
+   
+      参数放数组里。
+   
+      输出：
+   
+      ```
+      Tom
+      20
+      哈尔滨
+      ```
+   
+      ###它和 call 最大区别：
+   
+      **call 会执行函数。**
+   
+      例如：
+   
+      ```
+      show.call(person);
+      ```
+   
+      执行了。
+   
+      ------
+   
+      但是：
+   
+      ```
+      show.bind(person);
+      ```
+   
+      不会执行。
+   
+      它会返回一个：
+   
+      **新的函数。**
+   
+      例如：
+   
+      ```
+      function show() {
+          console.log(this.name);
+      }
+      
+      const person = {
+          name: "Tom"
+      };
+      
+      const fn = show.bind(person);
+      
+      fn();
+      ```
+   
+      输出：
+   
+      ```
+      Tom
+      ```
+   
+      注意：
+   
+      这里：
+   
+      ```
+      show.bind(person);
+      ```
+   
+      没有执行。
+   
+      它只是返回：
+   
+      ```
+      一个新的函数
+      ```
+   
+      这个新的函数：
+   
+      永远：
+   
+      ```
+      this = person
+      ```
+   
+      以后：
+   
+      ```
+      fn();
+      ```
+   
+      或者：
+   
+      ```
+      obj.fn = fn;
+      
+      obj.fn();
+      ```
+   
+      都不会改变。
+   
+      因为：
+   
+      bind 已经固定好了。
+   
    5. 规则五：箭头函数——词法绑定
-
+   
       箭头函数**没有自己的 `this`**，它会捕获**定义时所在外层作用域**的 `this` 值。
-
-      javascript
-
+   
       ```
       const obj = {
           name: '张三',
@@ -1950,5 +2114,14 @@ run
       };
       obj.sayHi(); // undefined（因为 window.name 不存在）
       ```
+   
+     **普通函数会根据调用方式决定 `this`。**
+   
+     **箭头函数根本不会根据调用方式决定 `this`。**  
+   
+      ~~~this` 不是在函数定义时确定的，而是在函数调用时由 JavaScript 引擎根据调用方式自动绑定的一个隐藏引用。普通函数拥有自己的 `this`，箭头函数没有自己的 `this`，而是从外层词法作用域继承。
+   
+   
 
-   实际应用
+### 七.闭包
+
