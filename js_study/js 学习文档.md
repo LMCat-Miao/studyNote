@@ -2125,3 +2125,766 @@ run
 
 ### 七.闭包
 
+### 八.JavaScript面向对象的核心
+
+## 为什么 JavaScript 需要 prototype？
+
+先看一个例子。
+
+```
+const cat1 = {
+    name: "Tom",
+    eat() {
+        console.log("eat");
+    }
+};
+
+const cat2 = {
+    name: "Jerry",
+    eat() {
+        console.log("eat");
+    }
+};
+
+const cat3 = {
+    name: "Kitty",
+    eat() {
+        console.log("eat");
+    }
+};
+```
+
+有没有发现？
+
+三只猫都有一个
+
+```
+eat()
+```
+
+但是每创建一个对象，
+
+都会重新创建一次函数。
+
+内存里实际上是：
+
+```
+cat1
+  eat -----> Function A
+
+cat2
+  eat -----> Function B
+
+cat3
+  eat -----> Function C
+```
+
+三个函数内容一样，浪费内存。
+
+于是 JS 想：
+
+> 能不能所有对象共用一个函数？
+
+于是就有了
+
+**prototype（原型）**
+
+------
+
+# 第一步：构造函数
+
+例如
+
+```
+function Cat(name) {
+    this.name = name;
+}
+```
+
+它只是一个普通函数。
+
+但是配合
+
+```
+new Cat()
+```
+
+它就变成了
+
+**构造函数（Constructor）**
+
+例如
+
+```
+const c1 = new Cat("Tom");
+const c2 = new Cat("Jerry");
+```
+
+得到
+
+```
+c1
+name = Tom
+
+c2
+name = Jerry
+```
+
+------
+
+## 那共用的方法放哪？
+
+放到
+
+```
+Cat.prototype
+```
+
+例如
+
+```
+Cat.prototype.eat = function () {
+    console.log("eat");
+};
+```
+
+于是
+
+```
+Cat
+
+prototype
+    ↓
+
+eat()
+```
+
+所有实例都会共享。
+
+于是
+
+```
+c1.eat()
+
+↓
+
+去 prototype 找
+
+↓
+
+找到 eat()
+```
+
+这就是 prototype 的意义。
+
+------
+
+# prototype 到底是什么？
+
+每一个函数都会自动拥有一个 prototype。
+
+例如
+
+```
+function Cat(){}
+```
+
+实际上 JS 自动帮你生成了：
+
+```
+Cat.prototype = {
+    constructor: Cat
+}
+```
+
+所以
+
+```
+console.log(Cat.prototype);
+```
+
+得到
+
+```
+{
+    constructor: Cat
+}
+```
+
+以后你写
+
+```
+Cat.prototype.eat = function(){}
+```
+
+就是给 prototype 增加方法。
+
+------
+
+# **proto** 又是什么？
+
+这是很多人最容易混淆的。
+
+记一句话：
+
+> **prototype 是函数的。**
+
+而
+
+> ***\*proto\** 是对象的。**
+
+例如
+
+```
+function Cat(){}
+```
+
+这里
+
+```
+Cat.prototype
+```
+
+属于
+
+Cat。
+
+而
+
+```
+const cat = new Cat();
+```
+
+cat 是对象。
+
+所以
+
+```
+cat.__proto__
+```
+
+属于 cat。
+
+------
+
+## 二者有什么关系？
+
+new 的时候
+
+JS 自动做了一件事情：
+
+```
+cat.__proto__
+
+↓
+
+Cat.prototype
+```
+
+也就是说
+
+```
+cat
+
+__proto__
+      │
+      ▼
+
+Cat.prototype
+```
+
+它们引用的是同一个对象。
+
+验证一下：
+
+```
+function Cat(){}
+
+const cat = new Cat();
+
+console.log(cat.__proto__ === Cat.prototype);
+```
+
+输出
+
+```
+true
+```
+
+这是面试最喜欢问的一句话。
+
+------
+
+# new 到底发生了什么？
+
+这是整个章节最重要的一节。
+
+假设
+
+```
+function Cat(name){
+    this.name = name;
+}
+
+const cat = new Cat("Tom");
+```
+
+new 一共干了四件事。
+
+------
+
+## 第一步
+
+创建一个空对象
+
+```
+const obj = {};
+```
+
+得到
+
+```
+obj
+```
+
+------
+
+## 第二步
+
+把
+
+```
+obj.__proto__
+```
+
+连接到
+
+```
+Cat.prototype
+```
+
+变成
+
+```
+obj
+
+↓
+
+__proto__
+
+↓
+
+Cat.prototype
+```
+
+于是以后找不到属性
+
+就去 prototype 找。
+
+------
+
+## 第三步
+
+执行构造函数
+
+相当于
+
+```
+Cat.call(obj, "Tom");
+```
+
+于是
+
+```
+this
+```
+
+就是
+
+```
+obj
+```
+
+所以
+
+```
+this.name = "Tom";
+```
+
+实际上变成
+
+```
+obj.name = "Tom";
+```
+
+------
+
+## 第四步
+
+返回对象
+
+```
+return obj;
+```
+
+于是
+
+```
+const cat = obj;
+```
+
+所以
+
+```
+new Cat()
+```
+
+实际上非常接近：
+
+```
+function myNew(fn, ...args){
+
+    const obj = {};
+
+    obj.__proto__ = fn.prototype;
+
+    fn.apply(obj, args);
+
+    return obj;
+}
+```
+
+这个版本以后你几乎一定会手写。
+
+------
+
+# 原型链是什么？
+
+假设
+
+```
+Cat.prototype.eat = function(){}
+```
+
+然后
+
+```
+const cat = new Cat();
+```
+
+执行
+
+```
+cat.eat();
+```
+
+JS 怎么找？
+
+第一步：
+
+```
+cat
+```
+
+有没有
+
+```
+eat
+```
+
+没有。
+
+↓
+
+第二步
+
+```
+cat.__proto__
+```
+
+有没有？
+
+也就是
+
+```
+Cat.prototype
+```
+
+找到了。
+
+结束。
+
+如果还没有呢？
+
+继续往上找。
+
+```
+Cat.prototype.__proto__
+```
+
+再没有
+
+继续
+
+```
+Object.prototype
+```
+
+再没有
+
+继续
+
+```
+null
+```
+
+结束。
+
+整个过程就是：
+
+```
+cat
+
+↓
+
+Cat.prototype
+
+↓
+
+Object.prototype
+
+↓
+
+null
+```
+
+这条链就叫
+
+**原型链（Prototype Chain）**
+
+# instanceof 怎么判断？
+
+例如
+
+```
+cat instanceof Cat
+```
+
+JS 根本不会看
+
+```
+cat.constructor
+```
+
+很多人误会了。
+
+真正做的是一直找
+
+```
+cat.__proto__
+```
+
+看看有没有
+
+```
+Cat.prototype
+```
+
+如果有
+
+返回
+
+```
+true
+```
+
+没有
+
+返回
+
+```
+false
+```
+
+例如
+
+```
+cat
+
+↓
+
+Cat.prototype
+```
+
+找到了。
+
+所以
+
+```
+cat instanceof Cat
+
+true
+```
+
+再例如
+
+```
+cat
+
+↓
+
+Cat.prototype
+
+↓
+
+Object.prototype
+```
+
+所以
+
+```
+cat instanceof Object
+```
+
+也是
+
+```
+true
+```
+
+------
+
+## instanceof 的伪代码
+
+```
+function myInstanceof(obj, Fn) {
+    let proto = obj.__proto__;
+
+    while (proto !== null) {
+        if (proto === Fn.prototype) {
+            return true;
+        }
+
+        proto = proto.__proto__;
+    }
+
+    return false;
+}
+```
+
+这就是面试版实现。
+
+------
+
+# constructor 是什么？
+
+前面说
+
+JS 自动创建
+
+```
+function Cat(){}
+```
+
+实际上还有
+
+```
+Cat.prototype = {
+    constructor: Cat
+}
+```
+
+所以
+
+```
+const cat = new Cat();
+```
+
+有
+
+```
+cat.constructor
+```
+
+为什么？
+
+因为
+
+```
+cat
+
+没有 constructor
+
+↓
+
+Cat.prototype
+
+有 constructor
+```
+
+所以
+
+```
+cat.constructor === Cat
+```
+
+成立。
+
+# 把这些知识串成一条线
+
+你可以把整个过程理解成一条完整的流程：
+
+```
+写一个构造函数
+        │
+        ▼
+function Cat(){}
+        │
+        ▼
+函数自动拥有 prototype
+        │
+        ▼
+Cat.prototype
+        │
+        ▼
+把公共方法放进去
+        │
+        ▼
+Cat.prototype.eat = ...
+        │
+        ▼
+new Cat()
+        │
+        ▼
+① 创建空对象 {}
+        │
+        ▼
+② 对象.__proto__ = Cat.prototype
+        │
+        ▼
+③ this 指向新对象并执行构造函数
+        │
+        ▼
+④ 返回新对象
+        │
+        ▼
+实例对象诞生
+        │
+        ▼
+访问属性
+        │
+        ▼
+先找自己
+        │
+        ▼
+找不到就沿着 __proto__ 找
+        │
+        ▼
+形成原型链
+        │
+        ▼
+instanceof 就是在这条链上查找
+        │
+        ▼
+如果找到了构造函数的 prototype，则返回 true
+```
